@@ -3133,32 +3133,77 @@ function adjustLayers(b) {
 var minHeight = 99999999;
 
 function sizeHandler() {
-    if ($("#game")) {
-        w = window.innerWidth;
-        h = window.innerHeight;
-        ig.ua.mobile ? (multiplier = Math.min(h / mobileHeight, w / mobileWidth), destW = mobileWidth * multiplier, destH = mobileHeight * multiplier) : (multiplier = Math.min(h / desktopHeight, w / desktopWidth), destW = desktopWidth * multiplier, destH = desktopHeight * multiplier);
-        widthRatio = window.innerWidth / mobileWidth;
-        heightRatio = window.innerHeight / mobileHeight;
-        adjustLayers();
-        window.scrollTo(0, 1);
-        ig.ua.mobile || $("#tempdiv").hide();
-        for (var b = navigator.userAgent.split(" "),
-                 c = null, d = 0; d < b.length; d++) "Version/" == b[d].substr(0, 8) && (c = b[d]);
-        b = window.chrome;
-        -1 < navigator.userAgent.indexOf("Chrome") && null == c ? ig.ua.mobile && null !== b && void 0 !== b && $(window) && (c = document.getElementById("scrollDown"), c.src = "media/graphics/orientate/scroll_down.png", c.style.height = "40%", c.style.width = "20%", c.style.backgroundColor = "rgba(11,156,49,0.4)", 0 == window.orientation && $("#scrollDown").hide(), 90 == Math.abs(window.orientation) && (c = document.body.offsetHeight, c < minHeight && (minHeight = c), c = portraitMode ?
-            document.getElementById("orientate") : document.getElementById("game"), b = document.getElementById("tempdiv"), c = c.clientHeight + b.clientHeight, console.log(c + "," + minHeight), c > minHeight ? $("#scrollDown").hide() : $("#scrollDown").show()), $(window).on("orientationchange", function () {
-            0 == window.orientation && $("#scrollDown").hide();
-            Math.abs(window.orientation);
-            $("#scrollDown").show();
-            0 == window.orientation && $("#scrollDown").hide()
-        }), window.addEventListener("resize", function () {
-            0 == window.orientation && $("#scrollDown").hide();
-            if (90 == Math.abs(window.orientation)) {
-                var b = portraitMode ? document.getElementById("orientate") : document.getElementById("game"),
-                    c = document.getElementById("tempdiv");
-                b.clientHeight + c.clientHeight > minHeight ? $("#scrollDown").hide() : $("#scrollDown").show()
+    if (!$("#game")) return;
+
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    if (ig.ua.mobile) {
+        multiplier = Math.min(h / mobileHeight, w / mobileWidth);
+        destW = mobileWidth * multiplier;
+        destH = mobileHeight * multiplier;
+    } else {
+        multiplier = Math.min(h / desktopHeight, w / desktopWidth);
+        destW = desktopWidth * multiplier;
+        destH = desktopHeight * multiplier;
+    }
+
+    widthRatio = w / mobileWidth;
+    heightRatio = h / mobileHeight;
+
+    adjustLayers();
+    window.scrollTo(0, 1);
+
+    if (!ig.ua.mobile) {
+        $("#tempdiv").hide();
+        return;
+    }
+
+    const userAgentParts = navigator.userAgent.split(" ");
+    const versionTag = userAgentParts.find(part => part.startsWith("Version/"));
+    const isChrome = navigator.userAgent.includes("Chrome") && !versionTag;
+    const chromeObj = window.chrome;
+
+    if (isChrome && chromeObj && $(window)) {
+        const scrollDown = document.getElementById("scrollDown");
+        if(scrollDown){
+            scrollDown.src = "media/graphics/orientate/scroll_down.png";
+            scrollDown.style.height = "40%";
+            scrollDown.style.width = "20%";
+            scrollDown.style.backgroundColor = "rgba(11,156,49,0.4)";
+        }
+
+        const checkScrollVisibility = () => {
+            if (window.orientation === 0) {
+                $("#scrollDown").hide();
+                return;
             }
-        })) : ($("#scrollDown").hide(), $("#tempdiv").hide())
+
+            const contentHeight = (portraitMode ?
+                    document.getElementById("orientate") :
+                    document.getElementById("game")).clientHeight
+                + document.getElementById("tempdiv").clientHeight;
+
+            console.log(`${contentHeight},${minHeight}`);
+            contentHeight > minHeight ? $("#scrollDown").hide() : $("#scrollDown").show();
+        };
+
+        checkScrollVisibility();
+
+        $(window).on("orientationchange", () => {
+            window.orientation === 0 ? $("#scrollDown").hide() : $("#scrollDown").show();
+        });
+
+        window.addEventListener("resize", () => {
+            if (window.orientation === 0) {
+                $("#scrollDown").hide();
+            } else {
+                checkScrollVisibility();
+            }
+        });
+    } else {
+        $("#scrollDown").hide();
+        $("#tempdiv").hide();
     }
 }
 
@@ -3331,11 +3376,15 @@ jukebox.Player.prototype = {
         this.context.pause();
         return this.__lastPosition
     }, resume: function (b) {
-        b = "number" ===
-        typeof b ? b : this.__lastPosition;
-        if (null !== b) return this.play(b), this.__lastPosition = null, !0;
-        this.context.play();
-        return !1
+        b = typeof b === "number" ? b : this.__lastPosition;
+        if (b !== null) return this.play(b), this.__lastPosition = null, true;
+
+        // 👇 xử lý play với catch
+        this.context.play().catch((err) => {
+            console.warn("Autoplay blocked:", err);
+        });
+
+        return true;
     }, HTML5API: {
         getVolume: function () {
             return this.context.volume || 1
@@ -3990,7 +4039,7 @@ ig.module("game.main").requires("impact.game", "impact.debug.debug", "plugins.sp
                     this.setupLocalStorage();
                 // }
                 this.removeLoadingWheel();
-                this.injectMobileLink();
+                // this.injectMobileLink();
                 this.setupURLParameters();
                 this.finalize();
             },
@@ -4155,9 +4204,6 @@ ig.module("game.main").requires("impact.game", "impact.debug.debug", "plugins.sp
             endGame: function () {
                 console.log('End game');
                 ig.soundHandler.stopBackgroundMusic();
-                if (ig.ua.mobile) {
-                    if (_SETTINGS['Ad']['Mobile']['End']['Enabled']) MobileAdInGameEnd.Initialize();
-                }
             },
             resetPlayerStats: function () {
                 ig.log('resetting player stats ...');
@@ -4256,12 +4302,6 @@ ig.module("game.main").requires("impact.game", "impact.debug.debug", "plugins.sp
             pressPlay: function () {
                 this.hideOverlay(['play']);
                 this.startGame();
-                if (ig.ua.mobile) {
-                    if (_SETTINGS['Ad']['Mobile']['Footer']['Enabled']) MobileAdInGameFooter.Initialize();
-                }
-                if (ig.ua.mobile) {
-                    if (_SETTINGS['Ad']['Mobile']['Header']['Enabled']) MobileAdInGameHeader.Initialize();
-                }
             },
             pauseGame: function () {
                 ig.system.stopRunLoop.call(ig.system);

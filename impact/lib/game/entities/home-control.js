@@ -1,4 +1,5 @@
-ig.module("game.entities.home-control").requires("impact.entity", "game.entities.button-more-games", "game.entities.audio-toggle", "game.entities.shop-control").defines(function () {
+ig.module("game.entities.home-control").requires("impact.entity", "game.entities.button-more-games", "game.entities.audio-toggle", "game.entities.shop-control")
+    .defines(function () {
     EntityHomeControl = ig.Entity.extend({
         zIndex: 100,
         isHome: !0,
@@ -40,17 +41,34 @@ ig.module("game.entities.home-control").requires("impact.entity", "game.entities
         mainMenuAlpha: 1,
         init: function (b, c, d) {
             this.parent(b, c, d);
-            ig.global.wm || (0 < ig.soundHandler.musicVolume ?
-                ig.soundHandler.bgmPlaying || (ig.soundHandler.playBackgroundMusic(), ig.soundHandler.setMusicVolume(ig.game.musicVolume), ig.soundHandler.setSfxVolume(ig.game.sfxVolume)) : ig.soundHandler.stopBackgroundMusic(), this.playButtonPos.x = ig.system.width / 2, this.shopButtonPos.x = ig.system.width - 10 - this.shopButtonRect.w / 2, this.infoButtonPos.x = ig.system.width - 10 - this.infoButtonRect.w / 2)
+
+            if (ig.global.wm) return;
+
+            const sound = ig.soundHandler;
+            const game = ig.game;
+
+            if (sound.musicVolume > 0) {
+                if (!sound.bgmPlaying) {
+                    sound.playBackgroundMusic();
+                    sound.setMusicVolume(game.musicVolume);
+                    sound.setSfxVolume(game.sfxVolume);
+                }
+            } else {
+                sound.stopBackgroundMusic();
+            }
+
+            this.playButtonPos.x = ig.system.width / 2;
+            this.shopButtonPos.x = ig.system.width - 10 - this.shopButtonRect.w / 2;
+            this.infoButtonPos.x = ig.system.width - 10 - this.infoButtonRect.w / 2;
         },
         ready: function () {
             this.pointer = ig.game.getEntitiesByType(EntityPointer)[0];
-            this.moregames = ig.game.spawnEntity(EntityButtonMoreGames,
-                this.moregamesButtonPos.x + this.moregamesButtonRect.x, this.moregamesButtonPos.y + this.moregamesButtonRect.y);
-            this.moregames.divLayerName = "more-games";
-            this.moregames.size.x = this.moregamesButtonRect.w;
-            this.moregames.size.y = this.moregamesButtonRect.h;
-            this.moregames.ready();
+            // this.moregames = ig.game.spawnEntity(EntityButtonMoreGames,
+            //     this.moregamesButtonPos.x + this.moregamesButtonRect.x, this.moregamesButtonPos.y + this.moregamesButtonRect.y);
+            // this.moregames.divLayerName = "more-games";
+            // this.moregames.size.x = this.moregamesButtonRect.w;
+            // this.moregames.size.y = this.moregamesButtonRect.h;
+            // this.moregames.ready();
             this.audiotoggle = ig.game.spawnEntity(EntityAudioToggle, 37, 38);
             this.audiotoggle.ready();
             this.shop = ig.game.spawnEntity(EntityShopControl, 0, 0);
@@ -75,13 +93,13 @@ ig.module("game.entities.home-control").requires("impact.entity", "game.entities
                 b.globalAlpha = this.mainMenuAlpha * this.playButtonAlpha;
                 this.playButtonAnim.draw(c, d);
                 b.restore();
-                c = this.shopButtonPos.x + this.shopButtonOffset.x + this.shopButtonRect.x;
-                d = this.shopButtonPos.y + this.shopButtonOffset.y + this.shopButtonRect.y;
-                this.shopButtonDown && (d += 2);
-                b.save();
-                b.globalAlpha = this.mainMenuAlpha * this.shopButtonAlpha;
-                this.shopButtonAnim.draw(c, d);
-                b.restore();
+                // c = this.shopButtonPos.x + this.shopButtonOffset.x + this.shopButtonRect.x;
+                // d = this.shopButtonPos.y + this.shopButtonOffset.y + this.shopButtonRect.y;
+                // this.shopButtonDown && (d += 2);
+                // b.save();
+                // b.globalAlpha = this.mainMenuAlpha * this.shopButtonAlpha;
+                // this.shopButtonAnim.draw(c, d);
+                // b.restore();
                 c = this.infoButtonPos.x + this.infoButtonOffset.x +
                     this.infoButtonRect.x;
                 d = this.infoButtonPos.y + this.infoButtonOffset.y + this.infoButtonRect.y;
@@ -90,14 +108,14 @@ ig.module("game.entities.home-control").requires("impact.entity", "game.entities
                 b.globalAlpha = this.mainMenuAlpha * this.infoButtonAlpha;
                 this.infoButtonAnim.draw(c, d);
                 b.restore();
-                c = this.moregamesButtonPos.x + this.moregamesButtonOffset.x + this.moregamesButtonRect.x;
-                d = this.moregamesButtonPos.y + this.moregamesButtonOffset.y + this.moregamesButtonRect.y;
-                this.moregamesButtonDown && (d += 2);
-                b.save();
-                b.globalAlpha = this.mainMenuAlpha * this.moregamesButtonAlpha;
-                this.moregamesButtonImage.draw(c,
-                    d);
-                b.restore();
+                // c = this.moregamesButtonPos.x + this.moregamesButtonOffset.x + this.moregamesButtonRect.x;
+                // d = this.moregamesButtonPos.y + this.moregamesButtonOffset.y + this.moregamesButtonRect.y;
+                // this.moregamesButtonDown && (d += 2);
+                // b.save();
+                // b.globalAlpha = this.mainMenuAlpha * this.moregamesButtonAlpha;
+                // this.moregamesButtonImage.draw(c,
+                //     d);
+                // b.restore();
                 b.globalAlpha = 1
             }
         },
@@ -139,7 +157,6 @@ ig.module("game.entities.home-control").requires("impact.entity", "game.entities
             return b.x + b.w > c.x && b.x < c.x + c.w && b.y + b.h > c.y && b.y < c.y + c.h ? !0 : !1
         },
         checkClicks: function () {
-            console.log(this.pointer.pos.x)
             this.pointer.refreshPos();
             var b = {};
             b.x = this.pointer.pos.x + this.pointer.size.x / 2;
