@@ -748,18 +748,54 @@ ig.module("game.entities.game-control").requires("impact.entity", "game.entities
             b.closePath();
             b.fill()
         },
-        spawnObject: function (b, c, d) {
-            var e = this.cameraDistance, f = d.z;
-            if (!(f < e)) {
-                d = {x: d.x, y: d.y, z: d.z};
-                f < e && (d.z = e);
-                var j = e / (d.z - this.cameraPos.z), e = ig.system.width / 2 - this.cameraPos.x * j + d.x * j,
-                    j = this.cameraPos.y * j +
-                        ig.system.height + d.y - (1 - j) * (ig.system.height - this.vanishingPoint.y), n = null;
-                0 == b ? (n = ig.game.spawnEntity(EntityGameBgObject, e, j), n.setImageId(c)) : 1 == b ? (n = ig.game.spawnEntity(EntityGameObstacle, e, j), n.setImageId(c)) : 2 == b && (n = ig.game.spawnEntity(EntityGamePickup, e, j), n.setPickupId(c));
-                return null != n ? (n.worldPos = d, n.zValue = f, n.ready(), this.objects.push(n), ig.game.sortEntitiesDeferred(), n) : null
+        spawnObject: function (type, id, worldPos) {
+            const camDist = this.cameraDistance;
+            let objectZ = worldPos.z;
+
+            // Nếu vật thể nằm sau camera thì không cần render
+            if (objectZ < camDist) return;
+
+            // Đảm bảo object luôn nằm sau camera
+            const adjustedWorldPos = { x: worldPos.x, y: worldPos.y, z: Math.max(worldPos.z, camDist) };
+
+            // Tính tỷ lệ phối cảnh theo chiều Z
+            const perspectiveScale = camDist / (adjustedWorldPos.z - this.cameraPos.z);
+
+            // Tính vị trí hiển thị theo trục X và Y (với hiệu ứng phối cảnh)
+            const screenX = ig.system.width / 2 - this.cameraPos.x * perspectiveScale + adjustedWorldPos.x * perspectiveScale;
+            const screenY = this.cameraPos.y * perspectiveScale + ig.system.height + adjustedWorldPos.y -
+                (1 - perspectiveScale) * (ig.system.height - this.vanishingPoint.y);
+
+            // Khởi tạo thực thể theo loại
+            let entity = null;
+            switch (type) {
+                case 0:
+                    entity = ig.game.spawnEntity(EntityGameBgObject, screenX, screenY);
+                    entity.setImageId(id);
+                    break;
+                case 1:
+                    entity = ig.game.spawnEntity(EntityGameObstacle, screenX, screenY);
+                    entity.setImageId(id);
+                    break;
+                case 2:
+                    entity = ig.game.spawnEntity(EntityGamePickup, screenX, screenY);
+                    entity.setPickupId(id);
+                    break;
             }
-        },
+
+            if (!entity) return null;
+
+            // Gán thông tin phối cảnh
+            entity.worldPos = adjustedWorldPos;
+            entity.zValue = objectZ;
+            entity.ready();
+
+            this.objects.push(entity);
+            ig.game.sortEntitiesDeferred();
+
+            return entity;
+        }
+        ,
         cleanObjects: function () {
             for (var b = [], c = 0; c < this.objects.length; c++) {
                 var d = this.objects[c];
@@ -796,44 +832,74 @@ ig.module("game.entities.game-control").requires("impact.entity", "game.entities
             }
         },
         spawnStartingObjects: function () {
-            var b = 30 * Math.random();
-            this.lastBgSetDistance = -b;
-            for (var c = 0; 2 > c; c++) {
-                for (var d = [], b = this.bgSetDefinitions.length, b = Math.floor(Math.random() * b), b = this.bgSetDefinitions[b], e = 0; e < b.length; e++) {
-                    var f = b[e], f = this.spawnObject(0, f.id, {
-                        x: f.x,
-                        y: f.y,
-                        z: this.lastBgSetDistance - this.totalDistance + f.z
+            // Tạo vị trí background đầu tiên với offset ngẫu nhiên
+            const initialOffset = 30 * Math.random();
+            this.lastBgSetDistance = -initialOffset;
+
+            // Spawn 2 cụm background ban đầu
+            for (let i = 0; i < 2; i++) {
+                const randomBgSetIndex = Math.floor(Math.random() * this.bgSetDefinitions.length);
+                const bgSet = this.bgSetDefinitions[randomBgSetIndex];
+                const bgEntities = [];
+
+                for (let j = 0; j < bgSet.length; j++) {
+                    const bgDef = bgSet[j];
+                    const entity = this.spawnObject(0, bgDef.id, {
+                        x: bgDef.x,
+                        y: bgDef.y,
+                        z: this.lastBgSetDistance - this.totalDistance + bgDef.z
                     });
-                    d.push(f)
+                    bgEntities.push(entity);
                 }
-                this.bgSets.push(d);
-                this.lastBgSetDistance += this.bgSetSize
+
+                this.bgSets.push(bgEntities);
+                this.lastBgSetDistance += this.bgSetSize;
             }
+
+            // Spawn các object hướng dẫn hoặc đoạn đầu của level
             if (this.tutorialMode) {
                 this.lastSegmentDistance = 10;
-                b = this.tutorialDefinitions[0];
-                c = [];
-                for (e = 0; e < b.length; e++) f = b[e], d = f.type, null == d && (d = 1), f = this.spawnObject(d, f.id,
-                    {x: f.x, y: f.y, z: this.lastSegmentDistance + f.z}), c.push(f);
-                this.segments.push(c);
-                this.lastSegmentDistance += 120
+                const tutorialDefs = this.tutorialDefinitions[0];
+                const tutorialSegment = [];
+
+                for (let i = 0; i < tutorialDefs.length; i++) {
+                    const def = tutorialDefs[i];
+                    const objType = def.type != null ? def.type : 1;
+                    const entity = this.spawnObject(objType, def.id, {
+                        x: def.x,
+                        y: def.y,
+                        z: this.lastSegmentDistance + def.z
+                    });
+                    tutorialSegment.push(entity);
+                }
+
+                this.segments.push(tutorialSegment);
+                this.lastSegmentDistance += 120;
             } else {
                 this.lastSegmentDistance = 70;
-                b = this.segmentDefinitions.length;
-                b = Math.floor(Math.random() * b);
-                b = this.segmentDefinitions[b];
-                c = [];
-                for (e = 0; e < b.length; e++) f = b[e], d = f.type, null == d && (d = 1), f = this.spawnObject(d, f.id, {
-                    x: f.x,
-                    y: f.y,
-                    z: this.lastSegmentDistance + f.z
-                }), c.push(f);
-                this.segments.push(c);
-                b = Math.floor(Math.random() * this.segmentSizeVariable);
-                this.lastSegmentDistance += this.segmentSize + b
+                const randomSegmentIndex = Math.floor(Math.random() * this.segmentDefinitions.length);
+                const segmentDef = this.segmentDefinitions[randomSegmentIndex];
+                const segmentEntities = [];
+
+                for (let i = 0; i < segmentDef.length; i++) {
+                    const def = segmentDef[i];
+                    const objType = def.type != null ? def.type : 1;
+                    const entity = this.spawnObject(objType, def.id, {
+                        x: def.x,
+                        y: def.y,
+                        z: this.lastSegmentDistance + def.z
+                    });
+                    segmentEntities.push(entity);
+                }
+
+                this.segments.push(segmentEntities);
+
+                const segmentOffset = Math.floor(Math.random() * this.segmentSizeVariable);
+                this.lastSegmentDistance += this.segmentSize + segmentOffset;
             }
-            ig.game.sortEntitiesDeferred()
+
+            // Sắp xếp lại toàn bộ thực thể đã spawn
+            ig.game.sortEntitiesDeferred();
         },
         updateBgSets: function () {
             if (!(this.totalDistance <= this.lastBgSetDistance - this.bgSetSize)) {

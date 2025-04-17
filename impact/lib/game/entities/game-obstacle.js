@@ -35,24 +35,39 @@ ig.module("game.entities.game-obstacle").requires("impact.entity").defines(funct
             this.zIndex = 1200 - this.zValue;
             ig.game.sortEntitiesDeferred()
         },
-        setImageId: function (b) {
-            if (null != b) {
-                if (0 ==
-                    b || 1 == b || 2 == b) b = 0 + Math.floor(3 * Math.random());
-                if (8 == b || 9 == b) b = 8 + Math.floor(2 * Math.random());
-                if (10 == b || 11 == b) b = 10 + Math.floor(2 * Math.random());
-                this.imageId = b;
-                this.image = this.images[b];
-                this.offset.x = this.image.width / 2;
-                this.offset.y = this.image.height;
-                this.slidable = 3 == b ? !0 : !1;
-                this.contactRect.w = this.image.width * this.scaleModifier;
-                this.contactRect.h = this.image.height / 2 * this.scaleModifier;
-                this.contactRect.x = -this.contactRect.w / 2;
-                this.contactRect.y = -this.contactRect.h;
-                if (5 == b || 6 == b || 8 == b || 9 == b) this.zWidth =
-                    3;
-                if (10 == b || 11 == b) this.zWidth = 5
+        setImageId: function (id) {
+            if (id == null) return;
+
+            // Random hóa một số loại ID để tạo sự đa dạng
+            if (id === 0 || id === 1 || id === 2) {
+                id = Math.floor(Math.random() * 3); // chọn 0–2
+            } else if (id === 8 || id === 9) {
+                id = 8 + Math.floor(Math.random() * 2); // chọn 8–9
+            } else if (id === 10 || id === 11) {
+                id = 10 + Math.floor(Math.random() * 2); // chọn 10–11
+            }
+
+            this.imageId = id;
+            this.image = this.images[id];
+
+            // Căn chỉnh vị trí vẽ ảnh
+            this.offset.x = this.image.width / 2;
+            this.offset.y = this.image.height;
+
+            // Đánh dấu object có thể trượt được không (cho nhân vật trượt dưới)
+            this.slidable = (id === 3);
+
+            // Kích thước vùng va chạm (AABB)
+            this.contactRect.w = this.image.width * this.scaleModifier;
+            this.contactRect.h = (this.image.height / 2) * this.scaleModifier;
+            this.contactRect.x = -this.contactRect.w / 2;
+            this.contactRect.y = -this.contactRect.h;
+
+            // Thiết lập chiều rộng va chạm theo chiều sâu Z
+            if ([5, 6, 8, 9].includes(id)) {
+                this.zWidth = 3;
+            } else if ([10, 11].includes(id)) {
+                this.zWidth = 5;
             }
         },
         draw: function () {

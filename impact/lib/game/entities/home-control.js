@@ -65,10 +65,10 @@ ig.module("game.entities.home-control").requires("impact.entity", "game.entities
             this.pointer = ig.game.getEntitiesByType(EntityPointer)[0];
             // this.moregames = ig.game.spawnEntity(EntityButtonMoreGames,
             //     this.moregamesButtonPos.x + this.moregamesButtonRect.x, this.moregamesButtonPos.y + this.moregamesButtonRect.y);
-            // this.moregames.divLayerName = "more-games";
-            // this.moregames.size.x = this.moregamesButtonRect.w;
-            // this.moregames.size.y = this.moregamesButtonRect.h;
-            // this.moregames.ready();
+            // this.moregames?.divLayerName = "more-games";
+            // this.moregames?.size.x = this.moregamesButtonRect.w;
+            // this.moregames?.size.y = this.moregamesButtonRect.h;
+            // this.moregames?.ready();
             this.audiotoggle = ig.game.spawnEntity(EntityAudioToggle, 37, 38);
             this.audiotoggle.ready();
             this.shop = ig.game.spawnEntity(EntityShopControl, 0, 0);
@@ -120,14 +120,15 @@ ig.module("game.entities.home-control").requires("impact.entity", "game.entities
             }
         },
         playGame: function () {
+            console.log('Play Game Clicked')
             ig.input.clearPressed();
-            this.moregames.hide();
+            this.moregames?.hide();
             ig.game.firstrun ? (ig.game.doTutorialFlag = !0, ig.game.firstrun = !1, ig.game.savePlayerStats()) : ig.game.doTutorialFlag = !1;
             ig.game.director.jumpTo(LevelGame)
         },
         playTutorial: function () {
             ig.input.clearPressed();
-            this.moregames.hide();
+            this.moregames?.hide();
             ig.game.doTutorialFlag = !0;
             ig.game.firstrun = !1;
             ig.game.savePlayerStats();
@@ -143,11 +144,11 @@ ig.module("game.entities.home-control").requires("impact.entity", "game.entities
         },
         pause: function () {
             this.menuPaused = !0;
-            this.moregames.hide()
+            this.moregames?.hide()
         },
         unpause: function () {
             this.menuPaused = !1;
-            this.moregames.show()
+            this.moregames?.show()
         },
         update: function () {
             this.time += ig.system.tick;
@@ -158,62 +159,66 @@ ig.module("game.entities.home-control").requires("impact.entity", "game.entities
         },
         checkClicks: function () {
             this.pointer.refreshPos();
-            var b = {};
-            b.x = this.pointer.pos.x + this.pointer.size.x / 2;
-            b.y = this.pointer.pos.y + this.pointer.size.y / 2;
-            b.w = 1;
-            b.h = 1;
-            var c = {};
-            c.x = this.playButtonPos.x + this.playButtonRect.x;
-            c.y = this.playButtonPos.y + this.playButtonRect.y;
-            c.w = this.playButtonRect.w;
-            c.h = this.playButtonRect.h;
-            if (this.aabbCheck(b, c)) {
-                if (this.playButtonDown = !1, this.playButtonAnim.tile = 0, ig.ua.mobile || (this.playButtonAnim.tile = 1), ig.input.state("click") && (this.playButtonDown = !0, this.playButtonAnim.tile = 2), ig.input.released("click")) {
-                    this.playButtonDown = !1;
-                    ig.ua.mobile || (this.playButtonAnim.tile = 1);
-                    ig.soundHandler.playSound(ig.soundHandler.SOUNDID.button);
-                    this.playGame();
-                    return
+            const pointerBox = {
+                x: this.pointer.pos.x + this.pointer.size.x / 2,
+                y: this.pointer.pos.y + this.pointer.size.y / 2,
+                w: 1,
+                h: 1
+            };
+
+            // Helper to handle button clicks
+            const handleButtonClick = (btnPos, btnRect, btnAnim, btnDownProp, callback) => {
+                const box = {
+                    x: btnPos.x + btnRect.x,
+                    y: btnPos.y + btnRect.y,
+                    w: btnRect.w,
+                    h: btnRect.h
+                };
+
+                if (this.aabbCheck(pointerBox, box)) {
+                    this[btnDownProp] = false;
+                    btnAnim.tile = ig.ua.mobile ? 0 : 1;
+
+                    if (ig.input.state("click")) {
+                        this[btnDownProp] = true;
+                        btnAnim.tile = 2;
+                    }
+
+                    if (ig.input.released("click")) {
+                        this[btnDownProp] = false;
+                        if (!ig.ua.mobile) btnAnim.tile = 1;
+                        ig.soundHandler.playSound(ig.soundHandler.SOUNDID.button);
+                        callback.call(this);
+                        return true;
+                    }
+                } else {
+                    this[btnDownProp] = false;
+                    btnAnim.tile = 0;
                 }
-            } else this.playButtonDown = !1, this.playButtonAnim.tile =
-                0;
-            c = {};
-            c.x = this.shopButtonPos.x + this.shopButtonRect.x;
-            c.y = this.shopButtonPos.y + this.shopButtonRect.y;
-            c.w = this.shopButtonRect.w;
-            c.h = this.shopButtonRect.h;
-            if (this.aabbCheck(b, c)) {
-                if (this.shopButtonDown = !1, this.shopButtonAnim.tile = 0, ig.ua.mobile || (this.shopButtonAnim.tile = 1), ig.input.state("click") && (this.shopButtonDown = !0, this.shopButtonAnim.tile = 2), ig.input.released("click")) {
-                    this.shopButtonDown = !1;
-                    ig.ua.mobile || (this.shopButtonAnim.tile = 1);
+                return false;
+            };
+
+            if (handleButtonClick(this.playButtonPos, this.playButtonRect, this.playButtonAnim, 'playButtonDown', this.playGame)) return;
+            // if (handleButtonClick(this.shopButtonPos, this.shopButtonRect, this.shopButtonAnim, 'shopButtonDown', this.showShop)) return;
+            if (handleButtonClick(this.infoButtonPos, this.infoButtonRect, this.infoButtonAnim, 'infoButtonDown', this.playTutorial)) return;
+
+            // Special handling for "more games" button (no tile animation)
+            const moreBox = {
+                x: this.moregamesButtonPos.x + this.moregamesButtonRect.x,
+                y: this.moregamesButtonPos.y + this.moregamesButtonRect.y,
+                w: this.moregamesButtonRect.w,
+                h: this.moregamesButtonRect.h
+            };
+
+            if (this.aabbCheck(pointerBox, moreBox)) {
+                this.moregamesButtonDown = ig.input.state("click");
+                if (ig.input.released("click")) {
+                    this.moregamesButtonDown = false;
                     ig.soundHandler.playSound(ig.soundHandler.SOUNDID.button);
-                    this.showShop();
-                    return
                 }
-            } else this.shopButtonDown = !1, this.shopButtonAnim.tile = 0;
-            c = {};
-            c.x = this.infoButtonPos.x + this.infoButtonRect.x;
-            c.y = this.infoButtonPos.y + this.infoButtonRect.y;
-            c.w = this.infoButtonRect.w;
-            c.h = this.infoButtonRect.h;
-            if (this.aabbCheck(b, c)) {
-                if (this.infoButtonDown = !1, this.infoButtonAnim.tile = 0, ig.ua.mobile || (this.infoButtonAnim.tile = 1), ig.input.state("click") && (this.infoButtonDown = !0, this.infoButtonAnim.tile = 2), ig.input.released("click")) {
-                    this.infoButtonDown = !1;
-                    ig.ua.mobile || (this.infoButtonAnim.tile =
-                        1);
-                    ig.soundHandler.playSound(ig.soundHandler.SOUNDID.button);
-                    this.playTutorial();
-                    return
-                }
-            } else this.infoButtonDown = !1, this.infoButtonAnim.tile = 0;
-            c = {};
-            c.x = this.moregamesButtonPos.x + this.moregamesButtonRect.x;
-            c.y = this.moregamesButtonPos.y + this.moregamesButtonRect.y;
-            c.w = this.moregamesButtonRect.w;
-            c.h = this.moregamesButtonRect.h;
-            this.aabbCheck(b, c) ? (this.moregamesButtonDown = !1, ig.input.state("click") && (this.moregamesButtonDown = !0), ig.input.released("click") && (this.moregamesButtonDown = !1, ig.soundHandler.playSound(ig.soundHandler.SOUNDID.button))) :
-                this.moregamesButtonDown = !1
+            } else {
+                this.moregamesButtonDown = false;
+            }
         },
         roundRect: function (b, c, d, e, f, j, n, p) {
             "undefined" == typeof p && (p = !0);

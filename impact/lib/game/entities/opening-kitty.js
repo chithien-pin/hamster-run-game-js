@@ -10,11 +10,11 @@ ig.module("game.entities.opening-kitty").requires("impact.entity").defines(funct
         ready: function () {
             if (!ig.wm) if (_SETTINGS.DeveloperBranding.Splash.Enabled) {
                 this.initTimer = new ig.Timer(0.1);
-                // try {
-                //     // ig.soundHandler?.playSound(ig.soundHandler.SOUNDID.kittyopeningSound)
-                // } catch (b) {
-                //     console.log(b)
-                // }
+                try {
+                    ig.soundHandler?.playSound(ig.soundHandler.SOUNDID.kittyopeningSound)
+                } catch (b) {
+                    console.log(b)
+                }
             } else ig.game.director.nextLevel(),
                 ig.system.context.globalAlpha = 1, this.kill()
         },

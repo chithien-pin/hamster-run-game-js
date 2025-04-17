@@ -401,3 +401,9 @@ html, body {
     position: absolute;
     border: 1px solid #f0f;
 }
+
+@media screen and (max-width: 768px) {
+    .ig_debug .ig_debug_stats{
+        display: none;
+    }
+}

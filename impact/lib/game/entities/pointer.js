@@ -20,9 +20,26 @@ ig.module("game.entities.pointer").requires("impact.entity").defines(function ()
         },
         refreshPos: function () {
             const scale = ig.system.scale || 1;
-            this.pos.x = ig.input.mouse.x / scale - this.size.x / 2 + ig.game.screen.x;
-            this.pos.y = ig.input.mouse.y / scale - this.size.y / 2 + ig.game.screen.y;
+            if (ig.ua.mobile) {
+                const ratioScreenH = window.innerHeight / mobileHeight;
+                const ratioScreenW = window.innerWidth / mobileWidth;
+                this.pos.x = ig.input.mouse.x / ratioScreenW - this.size.x / 2 + ig.game.screen.x;
+                this.pos.y = ig.input.mouse.y / ratioScreenH - this.size.y / 2 + ig.game.screen.y;
+            } else {
+                this.pos.x = ig.input.mouse.x / scale - this.size.x / 2 + ig.game.screen.x;
+                this.pos.y = ig.input.mouse.y / scale - this.size.y / 2 + ig.game.screen.y;
+            }
         },
+        // refreshPos: function () {
+        //     if (ig.ua.mobile) {
+        //         var b = window.innerHeight / mobileHeight;
+        //         this.pos.x = ig.input.mouse.x / (window.innerWidth / mobileWidth) - this.size.x / 2 + ig.game.screen.x;
+        //         this.pos.y = ig.input.mouse.y / b - this.size.y / 2
+        //     } else {
+        //         this.pos.x = ig.input.mouse.x / multiplier - this.size.x / 2 + ig.game.screen.x
+        //         this.pos.y = ig.input.mouse.y / multiplier - this.size.y / 2
+        //     }
+        // }
         update: function () {
             this.refreshPos();
             var b = null, c = -1;
