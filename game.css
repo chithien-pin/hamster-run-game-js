@@ -30,8 +30,7 @@ html, body {
 
 @font-face {
     font-family: "mainfont";
-    src: url('media/font/Big_Bottom_Cartoon.eot') format('embedded-opentype');
-    src: url('media/font/Big_Bottom_Cartoon.eot?#iefix') format('embedded-opentype'), url('media/font/Big_Bottom_Cartoon.woff') format('woff'), url('media/font/Big_Bottom_Cartoon.svg') format('svg'), url('media/font/Big_Bottom_Cartoon.otf') format('opentype');
+    src: url('media/font/Alegreya_Sans_SC/AlegreyaSansSC-Black.ttf'), url('media/font/FlappyBirdy.ttf'), url('media/font/Big_Bottom_Cartoon.woff') format('woff');
 }
 
 #scrollDown {
